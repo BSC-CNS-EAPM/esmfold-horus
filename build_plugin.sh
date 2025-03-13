@@ -2,6 +2,21 @@
 
 echo "Building plugin..."
 
-rm esmfold.hp
+# Remove any existing hp file
+rm *.hp
 
-zip -r esmfold.hp esmfold
+# Get the current git tag (otherwise 0.0.1 will be used)
+git_tag=$(git describe --tags)
+
+if [ "$git_tag" == "" ]; then
+    echo "No git tag found, using default version"
+    git_tag="0.0.1"
+fi
+
+echo "Building plugin with tag: $git_tag"
+
+# Update the "version" field in plugin.meta
+$sed_program -i 's/"version": "0.0.1"/"version": "'$git_tag'"/g' rdock/plugin.meta
+
+
+zip -r esmfold-$git_tag.hp esmfold
