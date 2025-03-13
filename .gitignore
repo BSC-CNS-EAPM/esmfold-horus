@@ -168,7 +168,8 @@ cython_debug/
 #.idea/
 
 # PyPI configuration file
-.pypirc
+.pypircg
 *.ipynb
 
 deps/
+*.hp
