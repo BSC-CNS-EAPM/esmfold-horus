@@ -1,15 +1,57 @@
 import os
 import subprocess
-from HorusAPI import PluginBlock, PluginVariable, VariableTypes, Extensions
+from HorusAPI import (
+    PluginBlock,
+    PluginVariable,
+    VariableTypes,
+    Extensions,
+    VariableGroup,
+)
 
 # Inputs
-fasta_input = PluginVariable(
+fasta_input = VariableGroup(
     id="fasta_input",
-    name="Fasta Input",
-    description="The input fasta file containing the protein sequences.",
-    type=VariableTypes.FILE,
-    allowedValues=["fasta"],
+    name="Fasta file",
+    description="Select a fasta file",
+    variables=[
+        PluginVariable(
+            id="fasta_input",
+            name="Fasta file",
+            description="The input fasta file containing the protein sequences.",
+            type=VariableTypes.FILE,
+            allowedValues=["fasta"],
+        )
+    ],
 )
+
+fasta_folder = VariableGroup(
+    id="fasta_folder",
+    name="Fasta folder",
+    description="Select a folder containing fasta files",
+    variables=[
+        PluginVariable(
+            id="fasta_folder",
+            name="Fasta folder",
+            description="A folder containing the input fastas.",
+            type=VariableTypes.FOLDER,
+        )
+    ],
+)
+
+fasta_string = VariableGroup(
+    id="fasta_string",
+    name="Fasta string",
+    description="Write a fasta string",
+    variables=[
+        PluginVariable(
+            id="fasta_string",
+            name="Fasta string",
+            description="The input fasta as a string.",
+            type=VariableTypes.TEXT_AREA,
+        )
+    ],
+)
+
 
 # Variables
 use_cuda = PluginVariable(
@@ -64,7 +106,31 @@ def fold_proteins(block: PluginBlock):
     float16_value = block.variables[float16.id]
     tensorfloat_32_value = block.variables[tensorfloat_32.id]
     chunk_size_value = block.variables[chunk_size.id]
-    input_value = block.inputs[fasta_input.id]
+
+    if block.selectedInputGroup == fasta_folder.id:
+        # Generate a single fasta by merging all the fastas in the input folder
+        input_value = block.inputs[fasta_folder.id]
+        merged = ""
+        for file in os.listdir(input_value):
+            if file.endswith(".fasta"):
+                path = os.path.join(input_value, file)
+                with open(path, "r", encoding="utf-8") as f:
+                    merged += f.read().strip() + "\n"
+        input_value = "input_sequences.fasta"
+        with open(input_value, "w", encoding="utf-8") as f:
+            f.write(merged)
+    elif block.selectedInputGroup == fasta_string.id:
+        fasta_string_value = block.inputs[fasta_string.id]
+
+        if not fasta_string_value.startswith(">"):
+            fasta_string_value = ">fasta_input\n" + fasta_string_value
+
+        input_value = "input_fasta.fasta"
+        # Write a file
+        with open(input_value, "w", encoding="utf-8") as f:
+            f.write(fasta_string_value)
+    else:
+        input_value = block.inputs[fasta_input.id]
 
     # Call the new script
     output_folder = "esm_fold_outputs"
@@ -138,7 +204,7 @@ esmfold_block = PluginBlock(
     id="esmfold",
     name="ESMFold",
     description="Predict 3D structures from protein sequences using ESMFold.",
-    inputs=[fasta_input],
+    inputGroups=[fasta_input, fasta_folder, fasta_string],
     variables=[use_cuda, float16, tensorfloat_32, chunk_size],
     action=fold_proteins,
     outputs=[output_directory],
