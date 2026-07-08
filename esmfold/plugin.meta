@@ -2,7 +2,7 @@
     "id": "esmfold",
     "name": "ESMFold",
     "description": "The unofficial plugin of ESMFold for Horus. Predict 3D structures from protein sequences.",
-    "author": "Christian Dom\u00ednguez",
+    "author": "Christian Dom\u00ednguez, Albert Cañellas",
     "version": "0.0.1",
     "pluginFile": "plugin.py",
     "minHorusVersion": "0.5.1",
